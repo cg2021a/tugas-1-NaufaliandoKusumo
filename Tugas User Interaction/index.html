@@ -14,6 +14,7 @@
 </head>
 <body>
     <div class="text">
+        <p>High Score : <span id="highscore">0</span></p>
         <p>Score : <span id="score">0</span></p>
     </div>
 </body>
@@ -21,8 +22,10 @@
 
 
 <script>    
-        let scene, camera, renderer;
-        let controls, rayCast, speed = 2000;
+    let scene, camera, renderer;
+    let controls, rayCast, speed = 2000;
+
+    const LEFT = 37, RIGHT = 39, UP = 38, DOWN = 40; 
 
     let randomInRange = function(from, to) {
         let x = Math.random() * (to - from);
@@ -39,12 +42,11 @@
             0x2439F4,
             0x3CFF10
         ];
-        let color = colorList[Math.floor(randomInRange(0,5))];
+        let color = colorList[Math.floor(randomInRange(0,6))];
         let emissive = color + 0.05;
 
         let material = new THREE.MeshPhongMaterial({
-            color: color, 
-            shineness: 100
+            color: color
         });
         let cube = new THREE.Mesh(geometry, material);
         cube.position.x = randomInRange(-25, 25);
@@ -53,8 +55,24 @@
         scene.add(cube);
     };
 
+    let onKeyDown = function(e) {
+        if(e.keyCode == LEFT)
+            camera.position.x -= 0.2;
+        else if(e.keyCode == RIGHT)
+            camera.position.x += 0.2;
+        else if(e.keyCode == UP)
+            camera.position.y += 0.2;
+        else if(e.keyCode == DOWN)
+            camera.position.y -= 0.2;
+    };
+
     let elementScore = document.getElementById("score");
     let scoreCorrect = 10;
+
+    let elementHighScore = document.getElementById("highscore");
+    let scoreWrong = -5;
+    let currentScore = 0;
+    let highScore = 0;
 
     let selectedObject = [];
     let originalColors = [];   
@@ -69,10 +87,59 @@
         let intersects = rayCast.intersectObjects(scene.children, false);
         intersects.forEach(obj => obj.object.material.opacity = 0.5);
 
+        if(intersects.length == 0){
+            return;
+        } 
+        else {   
+            selectedObject.push(intersects);
+            originalColors.push(intersects[0].object.material.color.getHex());
+    
+            console.log(intersects);
+            console.log(originalColors);
+            console.log(selectedObject);
+            
+            if(selectedObject.length > 1 ) {
+                if(selectedObject[0][0].object.uuid === selectedObject[1][0].object.uuid){
+                    selectedObject[0][0].object.rotation.x = 0;
+                    selectedObject[0][0].object.rotation.y = 0;
+                } else if(originalColors[0] == (originalColors[1])) {
+                    
+
+                    selectedObject.forEach(object => {
+                        object[0].object.geometry.dispose();
+                        object[0].object.material.dispose();
+                        scene.remove(object[0].object);
+                        renderer.renderLists.dispose();
+                    });
+    
+                    currentScore += scoreCorrect;
+                    speed += 20
+                    console.log(currentScore);
+                    elementScore.innerHTML = currentScore;
+    
+                }
+                else {
+                    selectedObject[0][0].object.material.emissive.setHex(originalColors[0]);
+                    selectedObject[0][0].object.rotation.x = 0;
+                    selectedObject[0][0].object.rotation.y = 0;
+                    currentScore += scoreWrong;
+                    console.log(currentScore);
+                    elementScore.innerHTML = currentScore;
+                }
+    
+                selectedObject = [];
+                originalColors = [];
+            } 
+            else if (selectedObject.length > 2) {
+                selectedObject = [];
+                originalColors = [];
+                return;
+            }
+        } 
     };
 
     let generateCube = function() {
-        if(scene.children.length >= 50){
+        if(scene.children.length >= 30){
             speed = 2000;
             
             if (currentScore > highScore) {
@@ -113,9 +180,13 @@
             createCube();
             generateCube();
 
-            const spotLight = new THREE.SpotLight(0xffffff);
-            spotLight.position.set(10, 10, 10);
-            scene.add(spotLight);
+            var spotlight = new THREE.SpotLight(0xffffff);
+            var spotlight2 = new THREE.SpotLight(0xfffff);
+            spotlight2.angle = Math.PI/2;
+            scene.add(spotlight);
+            scene.add(spotlight2);
+            spotlight.position.set(0, 45, -30);
+            spotlight2.position.set(0, -45, 30);
 
             // 4. create the renderer     
             // ...
