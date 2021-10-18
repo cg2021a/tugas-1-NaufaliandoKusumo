@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tugas User Interaction</title>
+    <script src="js/three.min.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+    <style>
+        .text {
+            color: rgb(46, 17, 17);
+            position: absolute;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="text">
+        <p>Score : <span id="score">0</span></p>
+    </div>
+</body>
+</html>
+
+
+<script>    
+        let scene, camera, renderer;
+        let controls, rayCast, speed = 2000;
+
+    let randomInRange = function(from, to) {
+        let x = Math.random() * (to - from);
+        return x + from;
+    };
+
+    let createCube = function(){
+        let geometry = new THREE.BoxGeometry(3, 3, 3);
+
+        const colorList = [
+            0xE08D00,
+            0x03EA11,
+            0xFD12B0,
+            0x2439F4,
+            0x3CFF10
+        ];
+        let color = colorList[Math.floor(randomInRange(0,5))];
+        let emissive = color + 0.05;
+
+        let material = new THREE.MeshPhongMaterial({
+            color: color, 
+            shineness: 100
+        });
+        let cube = new THREE.Mesh(geometry, material);
+        cube.position.x = randomInRange(-25, 25);
+        cube.position.y = randomInRange(-25, 25);
+        cube.position.z = randomInRange(-25, 25);
+        scene.add(cube);
+    };
+
+    let elementScore = document.getElementById("score");
+    let scoreCorrect = 10;
+
+    let selectedObject = [];
+    let originalColors = [];   
+
+    let onMouseClick = function(e) {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        mouse.z = 1;
+
+        rayCast.setFromCamera(mouse, camera);
+
+        let intersects = rayCast.intersectObjects(scene.children, false);
+        intersects.forEach(obj => obj.object.material.opacity = 0.5);
+
+    };
+
+    let generateCube = function() {
+        if(scene.children.length >= 50){
+            speed = 2000;
+            
+            if (currentScore > highScore) {
+                highScore = currentScore;
+                elementHighScore.innerHTML = highScore;
+            }
+
+            currentScore = 0;
+            elementScore.innerHTML = currentScore;
+
+        }
+        else{
+            speed -= 5/100*speed;
+            createCube();
+        }
+
+        setTimeout(generateCube, speed);
+    }
+
+        // set up the environment - 
+        // initiallize scene, camera, objects and renderer
+        let init = function() {
+            // 1. create the scene
+            // ...
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x505050);
+
+            
+            // 2. create an locate the camera       
+            // ...
+            camera = new THREE.PerspectiveCamera(70,
+                    window.innerWidth / window.innerHeight,
+                    1, 1000);
+            camera.position.z = 70;
+            
+            // 3. create an locate the object on the scene           
+            // ...
+            createCube();
+            generateCube();
+
+            const spotLight = new THREE.SpotLight(0xffffff);
+            spotLight.position.set(10, 10, 10);
+            scene.add(spotLight);
+
+            // 4. create the renderer     
+            // ...
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            document.addEventListener("click", onMouseClick, false); 
+
+            controls = new THREE.OrbitControls( camera, renderer.domElement );
+            controls.enableDamping = true;
+
+            rayCast = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            mouse.x = mouse.y = -1;   
+        };
+      
+        
+        // main animation loop - calls 50-60 in a second.
+        let mainLoop = function() {
+            renderer.render(scene, camera);
+            requestAnimationFrame(mainLoop);
+        };
+        
+        ///////////////////////////////////////////////
+        init();
+        mainLoop();
+    </script>
+    
